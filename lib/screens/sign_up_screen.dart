@@ -1,20 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class SignUpScreen extends StatefulWidget {
+  const SignUpScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   String message = "";
   bool isLoading = false;
 
-  Future<void> loginUser() async {
+  bool isValidGSUEmail(String email) {
+    return email.endsWith('@gsu.edu') || email.endsWith('@student.gsu.edu');
+  }
+
+  Future<void> signUpUser() async {
     String email = emailController.text.trim();
     String password = passwordController.text.trim();
 
@@ -25,23 +29,31 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    if (!isValidGSUEmail(email)) {
+      setState(() {
+        message =
+            "Enter a valid GSU email (must end with @gsu.edu or @student.gsu.edu).";
+      });
+      return;
+    }
+
     setState(() {
       isLoading = true;
       message = "";
     });
 
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: email, password: password);
       setState(() {
-        message = "Login successful!";
+        message = "Account created successfully!";
       });
-      Future.delayed(const Duration(seconds: 1), () {
+      Future.delayed(const Duration(seconds: 2), () {
         Navigator.pushReplacementNamed(context, '/home');
       });
     } on FirebaseAuthException catch (e) {
       setState(() {
-        message = e.message ?? "Login failed.";
+        message = e.message ?? "Sign up failed.";
       });
     } finally {
       setState(() {
@@ -53,14 +65,14 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Login"), backgroundColor: Colors.green),
+      appBar: AppBar(title: const Text("Sign Up"), backgroundColor: Colors.green),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             const SizedBox(height: 40),
             const Text(
-              "Login with your GSU Email",
+              "Create Account (GSU Email Only)",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 30),
@@ -68,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
               controller: emailController,
               keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(
-                labelText: "Email",
+                labelText: "GSU Email",
                 border: OutlineInputBorder(),
               ),
             ),
@@ -83,27 +95,25 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: isLoading ? null : loginUser,
+              onPressed: isLoading ? null : signUpUser,
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
               child: isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text("Login"),
+                  : const Text("Create Account"),
             ),
             const SizedBox(height: 20),
             Text(
               message,
               style: TextStyle(
-                  color: message.contains("successful")
-                      ? Colors.green
-                      : Colors.red,
+                  color: message.contains("success") ? Colors.green : Colors.red,
                   fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             TextButton(
               onPressed: () {
-                Navigator.pushReplacementNamed(context, '/signup');
+                Navigator.pushReplacementNamed(context, '/login');
               },
-              child: const Text("Don't have an account? Sign Up"),
+              child: const Text("Already have an account? Login"),
             ),
           ],
         ),

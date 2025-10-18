@@ -4,18 +4,9 @@ class ItemListingsScreen extends StatelessWidget {
   const ItemListingsScreen({super.key});
 
   final List<Map<String, String>> items = const [
-    {
-      'title': 'Textbook - Math 101',
-      'description': 'Used, good condition',
-    },
-    {
-      'title': 'Desk Chair',
-      'description': 'Comfortable, minor scratches',
-    },
-    {
-      'title': 'Laptop Stand',
-      'description': 'Metal, adjustable height',
-    },
+    {'title': 'Textbook - Math 101', 'description': 'Used, good condition'},
+    {'title': 'Desk Chair', 'description': 'Comfortable, minor scratches'},
+    {'title': 'Laptop Stand', 'description': 'Metal, adjustable height'},
   ];
 
   @override
@@ -44,9 +35,7 @@ class ItemListingsScreen extends StatelessWidget {
               title: Text(item['title']!),
               subtitle: Text(item['description']!),
               trailing: const Icon(Icons.arrow_forward_ios),
-              onTap: () {
-                // TODO: Navigate to item details screen
-              },
+              onTap: () {},
             ),
           );
         },
