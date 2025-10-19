@@ -1,3 +1,4 @@
+// add_item_screen.dart
 import 'dart:io' as io;
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/item_model.dart';
 
 class AddItemScreen extends StatefulWidget {
@@ -69,9 +71,14 @@ class _AddItemScreenState extends State<AddItemScreen> {
         imageUrl: imageUrl,
       );
 
+      // Get current logged-in user ID
+      final currentUserId = FirebaseAuth.instance.currentUser!.uid;
+
+      // Save to Firestore
       await FirebaseFirestore.instance.collection('items').add({
         ...newItem.toMap(),
         'createdAt': FieldValue.serverTimestamp(),
+        'sellerId': currentUserId,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(

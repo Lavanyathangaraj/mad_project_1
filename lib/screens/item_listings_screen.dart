@@ -1,7 +1,7 @@
-// item_listings_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'add_item_screen.dart';
+import 'item_details_screen.dart';
 import '../models/item_model.dart';
 
 class ItemListingsScreen extends StatelessWidget {
@@ -30,18 +30,23 @@ class ItemListingsScreen extends StatelessWidget {
 
           final items = snapshot.data!.docs.map((doc) {
             final data = doc.data() as Map<String, dynamic>;
-            return Item(
-              name: data['name'] ?? '',
-              description: data['description'] ?? '',
-              price: (data['price'] ?? 0).toDouble(),
-              imageUrl: data['imageUrl'],
-            );
+            return {
+              'item': Item(
+                name: data['name'] ?? '',
+                description: data['description'] ?? '',
+                price: (data['price'] ?? 0).toDouble(),
+                imageUrl: data['imageUrl'],
+              ),
+              'sellerId': data['sellerId'] ?? '',
+            };
           }).toList();
 
           return ListView.builder(
             itemCount: items.length,
             itemBuilder: (context, index) {
-              final item = items[index];
+              final item = items[index]['item'] as Item;
+              final sellerId = items[index]['sellerId'] as String;
+
               return ListTile(
                 leading: item.imageUrl != null
                     ? Image.network(
@@ -53,6 +58,27 @@ class ItemListingsScreen extends StatelessWidget {
                     : const Icon(Icons.inventory, size: 40),
                 title: Text(item.name),
                 subtitle: Text('\$${item.price.toStringAsFixed(2)}'),
+                onTap: () async {
+                  // Fetch seller info
+                  String sellerName = 'Unknown';
+                  if (sellerId.isNotEmpty) {
+                    final sellerDoc = await FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(sellerId)
+                        .get();
+                    sellerName = sellerDoc.data()?['name'] ?? 'Unknown';
+                  }
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ItemDetailsScreen(
+                        item: item,
+                        sellerName: sellerName,
+                      ),
+                    ),
+                  );
+                },
               );
             },
           );
@@ -63,7 +89,7 @@ class ItemListingsScreen extends StatelessWidget {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const AddItemScreen()),
+            MaterialPageRoute(builder: (context) => AddItemScreen()), // no const
           );
         },
         child: const Icon(Icons.add),
