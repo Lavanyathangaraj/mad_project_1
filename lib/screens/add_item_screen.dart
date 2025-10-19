@@ -1,4 +1,6 @@
-import 'dart:io';
+import 'dart:io' as io;
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -17,83 +19,78 @@ class _AddItemScreenState extends State<AddItemScreen> {
   final _nameController = TextEditingController();
   final _descController = TextEditingController();
   final _priceController = TextEditingController();
-  File? _image;
+
+  io.File? _imageFile;
+  Uint8List? _webImage; // for web
   bool _isLoading = false;
 
   Future<void> _pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _image = File(pickedFile.path);
-      });
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image == null) return;
+
+    if (kIsWeb) {
+      // Web: store bytes
+      final bytes = await image.readAsBytes();
+      setState(() => _webImage = bytes);
+    } else {
+      // Mobile/Desktop: store file
+      setState(() => _imageFile = io.File(image.path));
     }
   }
 
-  void _saveItem() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+  Future<void> _saveItem() async {
+    if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() => _isLoading = true);
     try {
       String? imageUrl;
-      // 1. Upload image to Firebase Storage if selected
-      if (_image != null) {
-        final fileName = '${DateTime.now().millisecondsSinceEpoch}-${_nameController.text}.jpg';
-        final storageRef = FirebaseStorage.instance.ref().child('item_images').child(fileName);
-        
-        // Put the file to storage
-        await storageRef.putFile(_image!);
-        
-        // Get the downloadable URL
+      if (kIsWeb && _webImage != null) {
+        final fileName =
+            '${DateTime.now().millisecondsSinceEpoch}-${_nameController.text}.jpg';
+        final storageRef =
+            FirebaseStorage.instance.ref().child('item_images').child(fileName);
+        await storageRef.putData(_webImage!);
+        imageUrl = await storageRef.getDownloadURL();
+      } else if (!kIsWeb && _imageFile != null) {
+        final fileName =
+            '${DateTime.now().millisecondsSinceEpoch}-${_nameController.text}.jpg';
+        final storageRef =
+            FirebaseStorage.instance.ref().child('item_images').child(fileName);
+        await storageRef.putFile(_imageFile!);
         imageUrl = await storageRef.getDownloadURL();
       }
 
-      final price = double.tryParse(_priceController.text) ?? 0.0; 
-
-      // 2. Create Item object and save to Firestore
       final newItem = Item(
         name: _nameController.text,
         description: _descController.text,
-        price: price,
-        imageUrl: imageUrl, // Save the URL
+        price: double.tryParse(_priceController.text) ?? 0.0,
+        imageUrl: imageUrl,
       );
 
-      // 3. Add to Firestore collection. This change is seen by all users immediately.
-      await FirebaseFirestore.instance.collection('items').add(newItem.toMap());
+      await FirebaseFirestore.instance.collection('items').add({
+        ...newItem.toMap(),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${newItem.name} added successfully!')),
       );
-      Navigator.pop(context); // Go back to item list
+      Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to save item: $e')),
       );
     } finally {
-      setState(() {
-        _isLoading = false; // Stop loading
-      });
+      setState(() => _isLoading = false);
     }
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _descController.dispose();
-    _priceController.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add New Item'),
-      ),
+      appBar: AppBar(title: const Text('Add New Item')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -101,7 +98,6 @@ class _AddItemScreenState extends State<AddItemScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ... (TextFormFields are the same)
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: 'Item Name'),
@@ -123,7 +119,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value!.isEmpty) return 'Please enter price';
-                  if (double.tryParse(value) == null) return 'Please enter a valid number';
+                  if (double.tryParse(value) == null) {
+                    return 'Please enter a valid number';
+                  }
                   return null;
                 },
               ),
@@ -131,13 +129,12 @@ class _AddItemScreenState extends State<AddItemScreen> {
               Center(
                 child: Column(
                   children: [
-                    _image == null
-                        ? const Text('No image selected.')
-                        : Image.file(
-                            _image!,
-                            height: 150,
-                            fit: BoxFit.cover,
-                          ),
+                    if (kIsWeb && _webImage != null)
+                      Image.memory(_webImage!, height: 150, fit: BoxFit.cover)
+                    else if (!kIsWeb && _imageFile != null)
+                      Image.file(_imageFile!, height: 150, fit: BoxFit.cover)
+                    else
+                      const Text('No image selected.'),
                     const SizedBox(height: 10),
                     ElevatedButton.icon(
                       onPressed: _pickImage,
@@ -152,11 +149,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _saveItem,
                   child: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                        )
+                      ? const CircularProgressIndicator(color: Colors.white)
                       : const Text('Save Item'),
                 ),
               ),

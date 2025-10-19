@@ -4,16 +4,6 @@ import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
-/// Default [FirebaseOptions] for use with your Firebase apps.
-///
-/// Example:
-/// ```dart
-/// import 'firebase_options.dart';
-/// // ...
-/// await Firebase.initializeApp(
-///   options: DefaultFirebaseOptions.currentPlatform,
-/// );
-/// ```
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
@@ -46,7 +36,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '652887940699',
     projectId: 'maddemo-621ab',
     authDomain: 'maddemo-621ab.firebaseapp.com',
-    storageBucket: 'maddemo-621ab.firebasestorage.app',
+    storageBucket: 'maddemo-621ab.appspot.com',
     measurementId: 'G-J7Z02X93CV',
   );
 
@@ -55,7 +45,7 @@ class DefaultFirebaseOptions {
     appId: '1:652887940699:android:ecdaab744f23a7470ba97e',
     messagingSenderId: '652887940699',
     projectId: 'maddemo-621ab',
-    storageBucket: 'maddemo-621ab.firebasestorage.app',
+    storageBucket: 'maddemo-621ab.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
@@ -63,7 +53,7 @@ class DefaultFirebaseOptions {
     appId: '1:652887940699:ios:6bfd31205cc9e60e0ba97e',
     messagingSenderId: '652887940699',
     projectId: 'maddemo-621ab',
-    storageBucket: 'maddemo-621ab.firebasestorage.app',
+    storageBucket: 'maddemo-621ab.appspot.com',
     iosBundleId: 'com.example.madDemoProject',
   );
 
@@ -72,7 +62,7 @@ class DefaultFirebaseOptions {
     appId: '1:652887940699:ios:6bfd31205cc9e60e0ba97e',
     messagingSenderId: '652887940699',
     projectId: 'maddemo-621ab',
-    storageBucket: 'maddemo-621ab.firebasestorage.app',
+    storageBucket: 'maddemo-621ab.appspot.com',
     iosBundleId: 'com.example.madDemoProject',
   );
 
@@ -82,7 +72,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '652887940699',
     projectId: 'maddemo-621ab',
     authDomain: 'maddemo-621ab.firebaseapp.com',
-    storageBucket: 'maddemo-621ab.firebasestorage.app',
+    storageBucket: 'maddemo-621ab.appspot.com',
     measurementId: 'G-D8JZW15771',
   );
 }
